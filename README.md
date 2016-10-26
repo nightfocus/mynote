@@ -1,0 +1,2 @@
+# mynote
+free code note.
