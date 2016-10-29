@@ -9,14 +9,23 @@
 #include <iostream>
 #include <string>
 #include <map>
-#include <thread>  // c++11 thread header file.
+#include <vector>
+#include <chrono>  // c++11. all below.
+#include <thread>
+#include <atomic>
+#include <mutex>  
+
 
 using namespace std;
+using namespace chrono;
+
+pthread_mutex_t mutex1;
+mutex mt11;
 
 void regcb_fun(void(*fu)(int& i))
 {
     int vh = 999; 
-    fu(vh);  // vhÊÇÒıÓÃ·½Ê½´«Èë£¬fuÄÚ²¿¿ÉÒÔ¸Ä±äÆäÖµ.
+    fu(vh);  // vhæ˜¯å¼•ç”¨æ–¹å¼ä¼ å…¥ï¼Œfuå†…éƒ¨å¯ä»¥æ”¹å˜å…¶å€¼.
 }
 
 void thread11_fun(int a, int& b)
@@ -40,42 +49,68 @@ public:
     
 };
 
+void autoincrease_fun1(int& cnt)
+{
+    for(int i=0; i<9000000; i++)
+        cnt++;
+}
+
+void autoincrease_fun2(atomic_int& cnt)
+{
+    for(int i=0; i<9000000; i++)
+        cnt++;
+}
+
+void autoincrease_fun3(int& cnt)
+{
+    for(int i=0; i<9000000; i++)
+    {
+        std::lock_guard<std::mutex> lck (mt11); // ä½¿ç”¨è¿™ä¸ªè€—æ—¶ç•¥é«˜äºpthread_mutex_lock/unlock.
+        // pthread_mutex_lock(&mutex1);
+        cnt++;
+        // pthread_mutex_unlock(&mutex1);
+    }
+}
+
 int main()
 {
-    // 1. lambda ±í´ïÊ½£¬¼´ÄäÃûº¯Êı. 
+    // 1. lambda è¡¨è¾¾å¼ï¼Œå³åŒ¿åå‡½æ•°. 
     /*
-        [] : ¿Õ²¶×¥Ìõ¿î,±íÃ÷ lambda body ²»·ÃÎÊ±ÕºÏ·¶Î§(enclosing scope)µÄÈÎºÎ±äÁ¿. 
-        [&] : ÒÔÒıÓÃµÄ·½Ê½·ÃÎÊ±ÕºÏ·¶Î§ÄÚµÄÇ°ÃæÒÑÉùÃ÷±äÁ¿. 
-        [=] : ÒÔÖµµÄ·½Ê½·ÃÎÊ±ÕºÏ·¶Î§ÄÚµÄÇ°ÃæÒÑÉùÃ÷µÄ±äÁ¿. 
-        [this] : ·ÃÎÊÀàÊµÀıµÄthisÖ¸Õë.
+        [] : ç©ºæ•æŠ“æ¡æ¬¾,è¡¨æ˜ lambda body ä¸è®¿é—®é—­åˆèŒƒå›´(enclosing scope)çš„ä»»ä½•å˜é‡. 
+        [&] : ä»¥å¼•ç”¨çš„æ–¹å¼è®¿é—®é—­åˆèŒƒå›´å†…çš„å‰é¢å·²å£°æ˜å˜é‡. 
+        [=] : ä»¥å€¼çš„æ–¹å¼è®¿é—®é—­åˆèŒƒå›´å†…çš„å‰é¢å·²å£°æ˜çš„å˜é‡. 
+        [this] : è®¿é—®ç±»å®ä¾‹çš„thisæŒ‡é’ˆ.
     */
     int i = 1024;
-    // ÍêÕûĞ´·¨ÊÇ£º[&]()->void{...};
+    // å®Œæ•´å†™æ³•æ˜¯ï¼š[&]()->void{...};
     auto lambda_func = [&] { i = 10; cout << "i turn to " << i << endl;};
     lambda_func();
 
-    // 2. stlÈİÆ÷ÉùÃ÷Ê±¸³Öµ
+    cout << "---------------------------------------------" << endl << endl;
+    // 2. stlå®¹å™¨å£°æ˜æ—¶èµ‹å€¼
     map<int, string> mm = {{23, "one string."}, {100, "greedy."}};
     
-    // 3. ĞÂµÄiteratorÑ­»··½Ê½
-    for(auto& i:mm) // ÒıÓÃ·½Ê½
+    // 3. æ–°çš„iteratorå¾ªç¯æ–¹å¼
+    for(auto& i:mm) // å¼•ç”¨æ–¹å¼
     {
         cout << i.second << endl;
-        i.second += " postfix";  // ¸Ä±äÔ­ÓĞµÄvalue
+        i.second += " postfix";  // æ”¹å˜åŸæœ‰çš„value
     }
-    for(auto i:mm) // ÔÙÀ´Ò»´Î£¬ÒÔ´«Öµ·½Ê½
+    for(auto i:mm) // å†æ¥ä¸€æ¬¡ï¼Œä»¥ä¼ å€¼æ–¹å¼
     {
         cout << "the second: " << i.second << endl;
     }    
     
-    // 4. ½«ÄäÃûº¯ÊıÓÃ×÷»Øµ÷º¯Êı´«µİ
-    // Ğ´·¨1£º Ê¾ÀıµÄº¯Êı²ÎÊı£ºint&£»·µ»ØÖµÓÉ±àÒëÆ÷×Ô¼ºÍÆ¶Ï
+    cout << "---------------------------------------------" << endl << endl;
+    // 4. å°†åŒ¿åå‡½æ•°ç”¨ä½œå›è°ƒå‡½æ•°ä¼ é€’
+    // å†™æ³•1ï¼š ç¤ºä¾‹çš„å‡½æ•°å‚æ•°ï¼šint&ï¼›è¿”å›å€¼ç”±ç¼–è¯‘å™¨è‡ªå·±æ¨æ–­
     auto x = [](int& j){ j = 8887; cout << "hello: " << j << endl;};
-    // Ğ´·¨2£º Ê¾ÀıµÄº¯Êı²ÎÊı£ºint&£»·µ»ØÖµÖ¸¶¨Îªvoid
+    // å†™æ³•2ï¼š ç¤ºä¾‹çš„å‡½æ•°å‚æ•°ï¼šint&ï¼›è¿”å›å€¼æŒ‡å®šä¸ºvoid
     // auto x = [](int& j)->void{ j = 1; cout << "hello: " << j << endl;};
     regcb_fun(x);
     
-    // 5. ´´½¨POSIX pthreadÏß³Ì£¬²¢Ö±½Ó±àĞ´Ïß³Ìº¯Êı.
+    cout << "---------------------------------------------" << endl << endl;
+    // 5. åˆ›å»ºPOSIX pthreadçº¿ç¨‹ï¼Œå¹¶ç›´æ¥ç¼–å†™çº¿ç¨‹å‡½æ•°.
     pthread_t t1;
     pthread_create(&t1, NULL, [](void* data)->void*
     {
@@ -83,20 +118,75 @@ int main()
         cout <<  pi << " in thread." << endl;
     }, &i);
     
-    // 6. Ê¹ÓÃÏß³ÌÀà´´½¨Ïß³Ì, ÊÖ²á£ºhttp://www.cplusplus.com/reference/thread/thread/
+    cout << "---------------------------------------------" << endl << endl;
+    // 6. ä½¿ç”¨çº¿ç¨‹ç±»åˆ›å»ºçº¿ç¨‹, æ‰‹å†Œï¼šhttp://www.cplusplus.com/reference/thread/thread/
     int x1=90;
     int x2 = 100;
-    thread td(thread11_fun, x1, std::ref(x2)); // Á½¸ö²ÎÊı£¬Ò»¸öÊÇÖµ´«µİ£¬Ò»¸öÊÇÒıÓÃ´«µİ
+    thread td(thread11_fun, x1, std::ref(x2)); // ä¸¤ä¸ªå‚æ•°ï¼Œä¸€ä¸ªæ˜¯å€¼ä¼ é€’ï¼Œä¸€ä¸ªæ˜¯å¼•ç”¨ä¼ é€’
     td.join();
     
-    // 7. Ê¹ÓÃ¶ÔÏóµÄ·Çstatic³ÉÔ±º¯Êı´´½¨Ïß³Ì
+    cout << "---------------------------------------------" << endl << endl;
+    // 7. ä½¿ç”¨å¯¹è±¡çš„éstaticæˆå‘˜å‡½æ•°åˆ›å»ºçº¿ç¨‹
     CA ca;
-    // Ğ´·¨1: µÚÒ»¸ö²ÎÊıÓÃstd::mem_fn±êÊ¾ÕâÊÇÒ»¸ö³ÉÔ±º¯Êı£¬µÚ¶ş¸ö²ÎÊı´«ÈëÊÇÊ¹ÓÃÄÄ¸ö¶ÔÏóµÄ³ÉÔ±º¯Êı
+    // å†™æ³•1: ç¬¬ä¸€ä¸ªå‚æ•°ç”¨std::mem_fnæ ‡ç¤ºè¿™æ˜¯ä¸€ä¸ªæˆå‘˜å‡½æ•°ï¼Œç¬¬äºŒä¸ªå‚æ•°ä¼ å…¥æ˜¯ä½¿ç”¨å“ªä¸ªå¯¹è±¡çš„æˆå‘˜å‡½æ•°
     // thread mtd1(std::mem_fn(&CA::fun1), ca, x1);
-    // Ğ´·¨2£º½ØÈ¡Íâ²¿×÷ÓÃÓòÖĞËùÓĞ±äÁ¿£¬²¢¿½±´Ò»·İÔÚº¯ÊıÌåÖĞÊ¹ÓÃ£¬µ«ÊÇ¶ÔcaÊ¹ÓÃÒıÓÃ
+    // å†™æ³•2ï¼šæˆªå–å¤–éƒ¨ä½œç”¨åŸŸä¸­æ‰€æœ‰å˜é‡ï¼Œå¹¶æ‹·è´ä¸€ä»½åœ¨å‡½æ•°ä½“ä¸­ä½¿ç”¨ï¼Œä½†æ˜¯å¯¹caä½¿ç”¨å¼•ç”¨
     thread mtd1([=, &ca](){ca.fun1(x1);});
-    mtd1.detach(); // ±ØĞëdetach»òjoinÏß³Ì¶ÔÏómtd1£¬·ñÔòÔÚmtd1µÄ×÷ÓÃÓò½áÊøÊ±£¬»áÅ×³öÒì³£µ¼ÖÂ±ÀÀ£.    
+    mtd1.detach(); // å¿…é¡»detachæˆ–joinçº¿ç¨‹å¯¹è±¡mtd1ï¼Œå¦åˆ™åœ¨mtd1çš„ä½œç”¨åŸŸç»“æŸæ—¶ï¼Œä¼šæŠ›å‡ºå¼‚å¸¸å¯¼è‡´å´©æºƒ.    
+        
+    // 8. æ—¶é’Ÿ
+    std::chrono::seconds asec(3000); // å®šä¹‰ä¸€ä¸ª 3000ç§’çš„chrono::secondså¯¹è±¡ï¼Œç²¾åº¦æ˜¯ç§’
+    std::chrono::minutes b = std::chrono::duration_cast<std::chrono::minutes>(asec); // å°†è¿™ä¸ªå¯¹è±¡è½¬æ¢æˆä»¥ç²¾åº¦æ˜¯åˆ†é’Ÿçš„å¯¹è±¡
+    cout << asec.count() << " seconds = " << b.count() << " minutes." << endl;  
     
+    auto c = std::chrono::duration<int,std::milli>(5000); // ç²¾åº¦æ˜¯æ¯«ç§’çš„å¯¹è±¡ï¼Œä¹Ÿå¯ä»¥ç›´æ¥ç”¨ std::chrono::milliseconds
+    std::chrono::seconds d = std::chrono::duration_cast<std::chrono::seconds>(c); // è½¬æ¢æˆç²¾åº¦æ˜¯ç§’çš„å¯¹è±¡
+    cout << c.count() << " ms = " << d.count() << " sec." << endl;  
+    
+    cout << "---------------------------------------------" << endl;
+    // 9. atomicä½¿ç”¨ åŠæ€§èƒ½å¯¹æ¯”
+    // case 1: ä½¿ç”¨10çº¿ç¨‹ä¸åŠ é”å¯¹intè¿›è¡Œè‡ªå¢. é€Ÿåº¦æœ€å¿«,ä½†ç»“æœä¸å¯¹ã€‚
+    {
+        auto start1 = system_clock::now();
+        int cnt = 0;
+        std::vector<std::thread> threads;
+        for (int i = 1; i <= 10; ++i)
+            threads.push_back(std::thread(autoincrease_fun1, ref(cnt)));
+        for (auto& th : threads)
+            th.join();
+        auto end1 = system_clock::now();
+        auto duration = duration_cast<chrono::milliseconds>(end1 - start1);
+        cout << "cnt1: " << cnt << ", duration: " << double(duration.count()) << " ms." << endl;
+    }
+    
+    // case 2: ä½¿ç”¨atomicintåŸå­å˜é‡. è€—æ—¶çº¦æ˜¯case1çš„3-5å€ï¼Œç»“æœæ­£ç¡®ã€‚
+    {
+        auto start1 = system_clock::now();
+        atomic_int cnt(0);
+        std::vector<std::thread> threads;
+        for (int i = 1; i <= 10; ++i)
+            threads.push_back(std::thread(autoincrease_fun2, ref(cnt)));
+        for (auto& th : threads)
+            th.join();
+        auto end1 = system_clock::now();
+        auto duration = duration_cast<chrono::milliseconds>(end1 - start1);
+        cout << "cnt2: " << cnt << ", duration: " << double(duration.count()) << " ms." << endl;
+    }
+    
+    // case 3: ä½¿ç”¨c++11çš„äº’æ–¥é”ã€‚ è€—æ—¶çº¦æ˜¯case2çš„5-7å€ï¼Œç»“æœæ­£ç¡®ã€‚
+    {
+        auto start1 = system_clock::now();
+        int cnt = 0;
+        std::vector<std::thread> threads;
+        for (int i = 1; i <= 10; ++i)
+            threads.push_back(std::thread(autoincrease_fun3, ref(cnt)));
+        for (auto& th : threads)
+            th.join();
+        auto end1 = system_clock::now();
+        auto duration = duration_cast<chrono::milliseconds>(end1 - start1);
+        cout << "cnt3: " << cnt << ", duration: " << double(duration.count()) << " ms." << endl;
+    }
+
     
     sleep(1);
     cout << "byebye." << endl;
