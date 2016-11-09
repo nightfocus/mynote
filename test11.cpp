@@ -1,5 +1,7 @@
 /*
-    g++ -o test11 test11.cpp -std=c++11 -lpthread
+    C++ 11标准的一些示例
+    
+    g++ -o test11 test11.cpp -std=c++11 -lpthread -Wall
     
     c++ 11 feature test.
     gcc version 4.8.4 pass through.
@@ -72,6 +74,51 @@ void autoincrease_fun3(int& cnt)
     }
 }
 
+
+class A
+{
+public:
+    virtual void fun1(int si) { cout << "In A::fun1(): " << si << endl; }
+    virtual void fun2() final {} // final 明确表示这个函数不能被派生类覆盖
+    virtual ~A() { cout << "A:~A();" << endl; }
+};
+
+class B: public A
+{
+public:
+    // override 明确表示fun1这个函数需覆盖基类的。如果没有可覆盖的，会编译失败。
+    virtual void fun1(int si) override { cout << "In B::fun1(): " << si << endl; }
+    ~B() { cout << "B:~B();" << endl; }
+};
+
+void* thread1_fun(shared_ptr<A> pa)
+{
+    pa->fun1(90101);
+    return NULL;
+}
+
+
+template <typename ... T> void DummyWrapper(T... t){};
+
+template <class T>
+T unpacker(const T& t)
+{
+    cout<<','<<t;
+    return t;
+}
+
+template <typename T, typename... Args>
+void write_line(const T& t, const Args& ... data)
+{
+    cout << t;
+    // 直接用unpacker(data)...是非法的，(可以认为直接逗号并列一堆结果没有意义)，需要包裹一下，就好像这些结果还有用
+    DummyWrapper(unpacker(data)...); 
+    cout << '\n';
+}
+
+
+
+
 int main()
 {
     // 1. lambda 表达式，即匿名函数. 
@@ -116,6 +163,7 @@ int main()
     {
         int pi = *(int*)data;
         cout <<  pi << " in thread." << endl;
+        return nullptr;
     }, &i);
     
     cout << "---------------------------------------------" << endl << endl;
@@ -159,7 +207,7 @@ int main()
         cout << "cnt1: " << cnt << ", duration: " << double(duration.count()) << " ms." << endl;
     }
     
-    // case 2: 使用atomicint原子变量. 耗时约是case1的3-5倍，结果正确。
+    // case 2: 使用atomic_int原子变量. 耗时约是case1的3-5倍，结果正确。
     {
         auto start1 = system_clock::now();
         atomic_int cnt(0);
@@ -187,6 +235,30 @@ int main()
         cout << "cnt3: " << cnt << ", duration: " << double(duration.count()) << " ms." << endl;
     }
 
+    // 10. 智能指针. shared_ptr
+    shared_ptr<B> pb2 = nullptr;
+    {
+        shared_ptr<B> pb = make_shared<B>();
+        pb2 = pb;
+        cout << "out of pb lifetime, but don't invoke B::~B()" << endl;
+    }
+    // 将shared_ptr作为线程参数传递
+    {
+        shared_ptr<A> pa1 = make_shared<A>();
+        thread td(thread1_fun, pa1);
+        td.detach();
+        // 在线程结束后，并且pa1生命周期结束，会调用A的析构函数.
+    }
+    // 定义一个指针对象spv，指向的vector<int>有10个元素，每个元素值为987
+    auto spv = std::make_shared<std::vector<int>>(12, 987);
+    cout << "spv.size: ()" << spv->size() << endl;
+    for(auto it : *spv)
+        cout << "  " << it << endl;    
+    
+    // 变长参数模板
+    int ji = 109;
+    string js = "alinjefo ";
+    write_line(ji, js);
     
     sleep(1);
     cout << "byebye." << endl;
