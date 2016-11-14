@@ -94,6 +94,8 @@ public:
 void* thread1_fun(shared_ptr<A> pa)
 {
     pa->fun1(90101);
+    sleep(3);
+    cout << "end of thread1_fun" << endl;
     return NULL;
 }
 
@@ -101,7 +103,7 @@ void* thread1_fun(shared_ptr<A> pa)
 template <typename ... T> void DummyWrapper(T... t){};
 
 template <class T>
-T unpacker(const T& t)
+inline T unpacker(const T& t)
 {
     cout<<','<<t;
     return t;
