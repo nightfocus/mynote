@@ -11,25 +11,70 @@
     tools:context=".MainActivity">
 
 
-    <LinearLayout
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/tipText"
+        android:text="Page: 1"
+        android:textSize="18dp"
+        android:layout_alignParentTop="true"
+        android:layout_alignParentLeft="true"
+        android:layout_marginTop="10dp"
+        android:textColor="#4e5c03"/>
+    <Button
+        android:layout_width="36dp"
+        android:layout_height="36dp"
         android:focusable="true"
         android:focusableInTouchMode="true"
-        android:layout_width="0px"
-        android:layout_height="0px"/>
+        android:layout_toLeftOf="@+id/imageView2"
+        android:layout_marginRight="15dp"
+        android:id="@+id/imageView1"
+        android:background="@drawable/one"
+        android:layout_alignParentTop="true"
+        android:onClick="OnPage1"/>
+    <Button
+        android:layout_width="36dp"
+        android:layout_height="36dp"
+        android:layout_toLeftOf="@+id/imageView3"
+        android:layout_marginRight="15dp"
+        android:id="@+id/imageView2"
+        android:background="@drawable/two"
+        android:layout_alignParentTop="true"
+        android:onClick="OnPage2"/>
+    <Button
+        android:layout_width="36dp"
+        android:layout_height="36dp"
+        android:layout_toLeftOf="@+id/imageView4"
+        android:layout_marginRight="15dp"
+        android:id="@+id/imageView3"
+        android:background="@drawable/three"
+        android:layout_alignParentTop="true"
+        android:onClick="OnPage3"/>
+    <Button
+        android:layout_width="36dp"
+        android:layout_height="36dp"
+        android:id="@+id/imageView4"
+        android:background="@drawable/four"
+        android:layout_alignParentTop="true"
+        android:layout_alignParentRight="true"
+        android:onClick="OnPage4"/>
 
     <EditText
         android:layout_width="match_parent"
-        android:layout_height="360dp"
+        android:layout_height="380dp"
         android:inputType="textMultiLine"
         android:ems="10"
         android:id="@+id/memoText"
         android:background="@android:drawable/edit_text"
         android:layout_gravity="left|top"
+        android:layout_below="@+id/imageView1"
+        android:layout_marginTop="10dp"
         android:gravity="top"
         android:scrollbars="vertical"
         android:autoLink="none"
         android:editable="true"
-        android:textColor="#154820"/>
+        android:textColor="#154820"
+        android:layout_alignParentEnd="true"/>
 
         <EditText
             android:layout_width="wrap_content"
@@ -42,17 +87,19 @@
             android:enabled="true"
             android:ems="11"
             android:background="@drawable/editsharpstyle"
-            android:height="10dp"/>
+            android:height="10dp"
+            />
 
         <Button
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="解密显示"
+            android:text="Show"
             android:id="@+id/buttonDecipher"
             android:layout_below="@+id/memoText"
             android:layout_toRightOf="@+id/passDecipher"
             android:layout_marginLeft="10dp"
             android:layout_alignRight="@+id/memoText"
+            android:textAllCaps="false"
             android:layout_gravity="right|bottom"
             style="@style/Widget.AppCompat.Button"
             android:onClick="OnDecipher"/>
@@ -60,13 +107,15 @@
     <Button
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="保 存"
+        android:text="Save"
         android:id="@+id/buttonSave"
         android:layout_below="@+id/passDecipher"
         android:layout_marginTop="12dp"
         android:layout_alignParentStart="true"
+        android:textAllCaps="false"
         android:layout_alignEnd="@+id/buttonDecipher"
         style="@style/Widget.AppCompat.Button"
         android:onClick="OnMemoSave"/>
+
 
 </RelativeLayout>

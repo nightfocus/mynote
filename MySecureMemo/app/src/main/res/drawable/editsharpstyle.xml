@@ -6,7 +6,6 @@
             android:angle="45"
             android:endColor="#CCCCCC"
             android:startColor="#CCCCCC" /> -->
-
     <padding
         android:bottom="7dp"
         android:left="7dp"
@@ -20,5 +19,4 @@
         android:color="#1199EF" />
 
     <solid android:color="#EEEEEE" />
-
 </shape>

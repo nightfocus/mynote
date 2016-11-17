@@ -1,21 +1,26 @@
 package cn.kisskyu.mysecurememo;
 
+import android.app.ActionBar;
 import android.app.Activity;
 import android.app.AlertDialog;
+import android.app.Service;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
+import android.os.Vibrator;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.text.Editable;
 import android.util.Base64;
 import android.view.View;
+import android.view.ViewGroup;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
 import android.widget.EditText;
 import android.text.TextWatcher;
+import android.widget.TextView;
 
 import java.io.UnsupportedEncodingException;
 import java.security.MessageDigest;
@@ -25,8 +30,11 @@ import java.security.NoSuchAlgorithmException;
 public class MainActivity extends AppCompatActivity
 {
     EditText memoText, passDecipher;
+    TextView tipText;
+    Button page1, page2, page3, page4;
     Button buttonDecipher, buttonSave;
     String passwdMd5; // 保存好的密码签名，用于验证密码是否正确
+    int currPage;
 
     TextWatcher myTextWatcher = new TextWatcher()
     {
@@ -68,6 +76,10 @@ public class MainActivity extends AppCompatActivity
         }
     };
 
+    static
+    {
+        System.loadLibrary("cencryptlib");
+    }
     /*
     *  在这个目录下：
     *  D:\github.private\mynote\MySecureMemo\app\src\main
@@ -75,8 +87,8 @@ public class MainActivity extends AppCompatActivity
     *  javah -d jni -classpath D:\android-sdk\platforms\android-23\android.jar;D:\android-sdk\extras\android\support\v7\appcompat\libs\android-support-v7-appcompat.jar;D:\android-sdk\extras\android\support\v4\android-support-v4.jar;D:\github.private\mynote\MySecureMemo\app\build\intermediates\classes\debug cn.kisskyu.mysecurememo.MainActivity
     *  会生成jni目录和.h文件.
     * */
-    // public synchronized static native String cEncrypt(String plainText, String pwd);
-    // public synchronized static native String cDecrypt(String cipherText, String pwd);
+    // 根据用户的原始密码，生成加解密所需的密钥.
+    public synchronized static native String cEncryptPwd(String pwd);
 
     @Override
     protected void onCreate(Bundle savedInstanceState)
@@ -88,12 +100,56 @@ public class MainActivity extends AppCompatActivity
         passDecipher = (EditText)findViewById(R.id.passDecipher);
         buttonDecipher = (Button)findViewById(R.id.buttonDecipher);
         buttonSave = (Button)findViewById(R.id.buttonSave);
+        tipText = (TextView)findViewById(R.id.tipText);
+        page1 = (Button)findViewById(R.id.imageView1);
+        page2 = (Button)findViewById(R.id.imageView2);
+        page3 = (Button)findViewById(R.id.imageView3);
+        page4 = (Button)findViewById(R.id.imageView4);
+        currPage = 1; // 默认为第一页.
 
         initialData();
         // 注册文本框的事件
         // memoText.addTextChangedListener(myTextWatcher);
 
+        // 捕获电源按键，当黑屏后，需恢复到密文状态
         registerReceiver(myReceiver, new IntentFilter(Intent.ACTION_SCREEN_OFF));
+    }
+
+    public void OnPage1(View v)
+    {
+        if(currPage == 1)
+            return;
+        currPage = 1;
+        initialData();
+        Vibrator vibrator=(Vibrator)getSystemService(Service.VIBRATOR_SERVICE);
+        vibrator.vibrate(new long[]{0, 200}, -1);
+    }
+    public void OnPage2(View v)
+    {
+        if(currPage == 2)
+            return;
+        currPage = 2;
+        initialData();
+        Vibrator vibrator=(Vibrator)getSystemService(Service.VIBRATOR_SERVICE);
+        vibrator.vibrate(new long[]{0, 200}, -1);
+    }
+    public void OnPage3(View v)
+    {
+        if(currPage == 3)
+            return;
+        currPage = 3;
+        initialData();
+        Vibrator vibrator=(Vibrator)getSystemService(Service.VIBRATOR_SERVICE);
+        vibrator.vibrate(new long[]{0, 200}, -1);
+    }
+    public void OnPage4(View v)
+    {
+        if(currPage == 4)
+            return;
+        currPage = 4;
+        initialData();
+        Vibrator vibrator=(Vibrator)getSystemService(Service.VIBRATOR_SERVICE);
+        vibrator.vibrate(new long[]{0, 200}, -1);
     }
 
     public void OnDecipher(View v)
@@ -103,13 +159,15 @@ public class MainActivity extends AppCompatActivity
         if(cipherText.isEmpty() || password.isEmpty() || !checkPasswd(password))
         {
             AlertDialog.Builder AlertPlan  = new AlertDialog.Builder(MainActivity.this);
-            AlertPlan.setTitle("没有读取到数据，或者输入的密码不对.");
+            AlertPlan.setTitle("没有读取到数据，或者输入的密码不对。");
             AlertPlan.setPositiveButton(" 返回 ", null);
             AlertPlan.show();
             return;
         }
 
         String plainMemo = personalDecrypt(cipherText, password);
+        if(plainMemo.isEmpty())
+            return;
         memoText.setText(plainMemo);
         memoText.setSelection(plainMemo.length());
 
@@ -118,33 +176,40 @@ public class MainActivity extends AppCompatActivity
 
     public void OnMemoSave(View v)
     {
+        String cipherText="";
+
         String plainMemo = memoText.getText().toString();
         String password = passDecipher.getText().toString();
-        if(plainMemo.isEmpty() || password.isEmpty())
+        if(plainMemo.isEmpty())
         {
             AlertDialog.Builder AlertPlan  = new AlertDialog.Builder(MainActivity.this);
-            AlertPlan.setTitle("没有需要保存的数据，或者没有设定密码.");
+            AlertPlan.setTitle("该页数据将恢复到初始状态，原有密码将被清除。");
             AlertPlan.setPositiveButton(" 返回 ", null);
             AlertPlan.show();
-            return;
-        }
 
-        passwdMd5 = generatePasswdMd5(password);
-        String cipherText = personalEncrypt(plainMemo, password);
+            passwdMd5 = "";
+        }
+        else
+        {
+            passwdMd5 = generatePasswdMd5(password);
+            cipherText = personalEncrypt(plainMemo, password);
+            if (cipherText.isEmpty())
+                return;
+        }
 
         SharedPreferences setting = getPreferences(Activity.MODE_PRIVATE);
         SharedPreferences.Editor editor = setting.edit();
-        editor.putString("memTextBase64", cipherText);
-        editor.putString("passwdMd5", passwdMd5);
+        editor.putString(getSharedDataKey(), cipherText);
+        editor.putString(getSharedPwdKey(), passwdMd5);
         editor.commit();
 
-        String mbase64text = setting.getString("memTextBase64", "");
+        // 从SharedPreferences 中读取出来回显密文
+        String mbase64text = setting.getString(getSharedDataKey(), "");
         setWaitDesStatus();
         memoText.setText(mbase64text);
-        memoText.setSelection(mbase64text.length());
     }
 
-    // 密码校验
+    // 密码校验，根据用户的原始密码passwd计算MD5，再和保存好的密码对比.
     private  boolean checkPasswd(String passwd)
     {
         String newPasswdMd5 = generatePasswdMd5(passwd);
@@ -171,26 +236,55 @@ public class MainActivity extends AppCompatActivity
 
     }
 
-    // 加密
+    // 加密,使用pwssword对plainText进行3DES加密，返回密文串
     private String personalEncrypt(String plainText, String password)
     {
-        String strBase64 = new String(Base64.encode(plainText.getBytes(), Base64.DEFAULT));
-        return strBase64;
+        try
+        {
+            String actualPwd = cEncryptPwd(password);
+            String cipherText = AndroidDes3Util.encode(plainText, actualPwd);
+            return cipherText;
+        }
+        catch (Exception e)
+        {
+            AlertDialog.Builder AlertPlan  = new AlertDialog.Builder(MainActivity.this);
+            AlertPlan.setTitle("缺少必要的加密算法库，搞不定了。");
+            AlertPlan.setPositiveButton(" 返回 ", null);
+            AlertPlan.show();
+            return new String();
+        }
     }
 
-    // 解密
+    // 解密，同上.
     private String personalDecrypt(String cipherText, String password)
     {
-        String plainText = new String(Base64.decode(cipherText.getBytes(), Base64.DEFAULT));
-        return plainText;
+        try
+        {
+            String actualPwd = cEncryptPwd(password);
+            String plainText = AndroidDes3Util.decode(cipherText, actualPwd);
+            return plainText;
+        }
+        catch (Exception e)
+        {
+            AlertDialog.Builder AlertPlan  = new AlertDialog.Builder(MainActivity.this);
+            AlertPlan.setTitle("缺少必要的加密算法库，搞不定了。");
+            AlertPlan.setPositiveButton(" 返回 ", null);
+            AlertPlan.show();
+            return new String();
+        }
     }
 
+    // 根据当前是第几页，做获取对应的数据进行初始化.
     private void initialData()
     {
+        memoText.setText("");
+        passDecipher.setText("");
+        tipText.setText("Page: " + String.valueOf(currPage));
+
         setInitialStatus();
         SharedPreferences setting = getPreferences(Activity.MODE_PRIVATE);
-        String mbase64text = setting.getString("memTextBase64", "");
-        passwdMd5 = setting.getString("passwdMd5", "").trim();
+        String mbase64text = setting.getString(getSharedDataKey(), "");
+        passwdMd5 = setting.getString(getSharedPwdKey(), "").trim();
         if(!mbase64text.isEmpty())
         {
             setWaitDesStatus();
@@ -234,6 +328,14 @@ public class MainActivity extends AppCompatActivity
         //buttonSave.requestFocus();
     }
 
+    private String getSharedDataKey()
+    {
+        return "memTextBase64_" + String.valueOf(currPage);
+    }
+    private String getSharedPwdKey()
+    {
+        return "passwdMd5_" + String.valueOf(currPage);
+    }
     /*
     private void setWaitSaveStatus()
     {
