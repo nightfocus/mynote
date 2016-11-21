@@ -6,6 +6,23 @@
         <item name="colorPrimary">@color/colorPrimary</item>
         <item name="colorPrimaryDark">@color/colorPrimaryDark</item>
         <item name="colorAccent">@color/colorAccent</item>
+        <item name="android:popupMenuStyle">@style/MenuTextStyle</item>
+        <item name="android:textAppearanceSmallPopupMenu">@style/MyTextAppearance</item>
+        <item name="android:textAppearanceLargePopupMenu">@style/MyTextAppearance</item>
+        <item name="android:dropDownListViewStyle">@style/MyListViewStyle</item>
     </style>
 
+
+    <style name="MenuTextStyle" parent="AppTheme">
+        <item name="android:popupBackground">@color/popupwindow_background</item>
+    </style>
+
+    <style name="MyTextAppearance">
+        <item name="android:textColor">#4e5c03</item>
+        <item name="android:textSize">20sp</item>
+    </style>
+    <style name="MyListViewStyle">
+        <item name="android:divider">#4e5c03</item>
+        <item name="android:dividerHeight">1px</item>
+    </style>
 </resources>

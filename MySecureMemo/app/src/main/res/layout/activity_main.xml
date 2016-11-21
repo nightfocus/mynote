@@ -76,6 +76,7 @@
         android:textColor="#154820"
         android:layout_alignParentEnd="true"/>
 
+        <!-- 该输入框使用了样式文件：res/drawable/editsharpstyle.xml-->
         <EditText
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"

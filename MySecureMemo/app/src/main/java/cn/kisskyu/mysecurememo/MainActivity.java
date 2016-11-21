@@ -1,6 +1,6 @@
 package cn.kisskyu.mysecurememo;
 
-import android.app.ActionBar;
+import android.Manifest;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.Service;
@@ -9,20 +9,26 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
+import android.net.Uri;
 import android.os.Vibrator;
+import android.support.v4.app.ActivityCompat;
+import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.text.Editable;
 import android.util.Base64;
+import android.view.MenuItem;
 import android.view.View;
-import android.view.ViewGroup;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
 import android.widget.EditText;
 import android.text.TextWatcher;
+import android.widget.PopupMenu;
 import android.widget.TextView;
-
-import java.io.UnsupportedEncodingException;
+import java.io.FileInputStream;
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
@@ -35,8 +41,11 @@ public class MainActivity extends AppCompatActivity
     Button buttonDecipher, buttonSave;
     String passwdMd5; // 保存好的密码签名，用于验证密码是否正确
     int currPage;
+    boolean has_READ_EXTERNAL_STORAGE = false;
 
-    TextWatcher myTextWatcher = new TextWatcher()
+    // 定义一个匿名类，实现TextWatcher这个接口，并创建该类的对象myTextWatcher，
+    // 这样在这个类中，可以直接使用 MainActivity 类的成员变量。
+    private TextWatcher myTextWatcher = new TextWatcher()
     {
         @Override
         public void beforeTextChanged(CharSequence s, int start, int count, int after)
@@ -54,6 +63,7 @@ public class MainActivity extends AppCompatActivity
         }
     };
 
+    // 定义一个广播接收器，用于接收Android发送的广播消息.
     private BroadcastReceiver myReceiver = new BroadcastReceiver()
     {
         @Override
@@ -113,6 +123,22 @@ public class MainActivity extends AppCompatActivity
 
         // 捕获电源按键，当黑屏后，需恢复到密文状态
         registerReceiver(myReceiver, new IntentFilter(Intent.ACTION_SCREEN_OFF));
+
+        // 注册4个按钮的长按事件.
+        // 这也可以使用匿名类的语法，而不是每个注册时都new一个对象
+        page1.setOnLongClickListener(new OnLongClickPage());
+        page2.setOnLongClickListener(new OnLongClickPage());
+        page3.setOnLongClickListener(new OnLongClickPage());
+        page4.setOnLongClickListener(new OnLongClickPage());
+    }
+
+    // Activity关闭时会被触发，但调试时断点没有进入. 原因未知
+    @Override
+    protected void onDestroy()
+    {
+        // System.out.println("onDestroy.");
+        super.onDestroy();
+        unregisterReceiver(myReceiver);
     }
 
     public void OnPage1(View v)
@@ -121,6 +147,7 @@ public class MainActivity extends AppCompatActivity
             return;
         currPage = 1;
         initialData();
+        // 开启时长为200毫秒的振动
         Vibrator vibrator=(Vibrator)getSystemService(Service.VIBRATOR_SERVICE);
         vibrator.vibrate(new long[]{0, 200}, -1);
     }
@@ -213,7 +240,7 @@ public class MainActivity extends AppCompatActivity
     private  boolean checkPasswd(String passwd)
     {
         String newPasswdMd5 = generatePasswdMd5(passwd);
-        return (newPasswdMd5.equals(passwdMd5));
+        return (newPasswdMd5.equals(passwdMd5) || passwdMd5.isEmpty());
     }
     // 生成密码的md5签名
     private String generatePasswdMd5(String passwd)
@@ -289,6 +316,219 @@ public class MainActivity extends AppCompatActivity
         {
             setWaitDesStatus();
             memoText.setText(mbase64text);
+        }
+    }
+
+    private class OnLongClickPage implements View.OnLongClickListener
+    {
+
+        @Override
+        public boolean onLongClick(View v)
+        {
+            // 检查是哪一个按钮触发的
+            // 仅仅是当前currPage对应的按钮触发时才响应
+            int whichPage = 0;
+            int vhid = v.getId();
+            switch (vhid)
+            {
+                case R.id.imageView1:
+                    whichPage = 1;
+                    break;
+                case R.id.imageView2:
+                    whichPage = 2;
+                    break;
+                case R.id.imageView3:
+                    whichPage = 3;
+                    break;
+                case R.id.imageView4:
+                    whichPage = 4;
+                    break;
+                default:
+                    break;
+            }
+            if(whichPage != currPage)
+                return false;
+
+            // 创建PopupMenu对象
+            final PopupMenu popup = new PopupMenu(MainActivity.this, v);
+            // 通过代码添加菜单项
+            // Menu menu = popup.getMenu();
+            // menu.add(Menu.NONE, Menu.FIRST + 0, 0, "复制");
+            // menu.add(Menu.NONE, Menu.FIRST + 1, 1, "粘贴");
+
+            // 将R.menu.menuix 菜单资源加载到popup菜单中
+            getMenuInflater().inflate(R.menu.menuix, popup.getMenu());
+
+            // 为popup菜单的菜单项单击事件绑定事件监听器
+            // 仍然是匿名对象，实现 OnMenuItemClickListener 这个接口
+            popup.setOnMenuItemClickListener(new PopupMenu.OnMenuItemClickListener()
+            {
+                @Override
+                public boolean onMenuItemClick(MenuItem item)
+                {
+                    switch (item.getItemId())
+                    {
+                        case R.id.exportmemo:
+                            exportmemo();
+                            popup.dismiss();
+                            break;
+                        case R.id.importmemo:
+                            importmemo();
+                            popup.dismiss();
+                            break;
+                        default:
+                            break;
+                        //使用Toast显示用户单击的菜单项
+                        // Toast.makeText(PopupMenuTest.this, "您单击了【"+item.getTitle()+"】菜单项",Toast.LENGTH_SHORT).show();
+                    }
+                    return true;
+                }
+
+            });
+
+            // 在 PopupMenu 中显示出图标
+            // PopupMenu的样式文件在 res/menu/menuix.xml，虽然定义了icon，但默认仍不会显示，
+            // 这里通过反射的机制让图标能显示出来：
+            try
+            {
+                // 通过popup这个对象，反射出它的class，再获取内部成员 mPopup。mPopup为：private final MenuPopupHelper mPopup;
+                Field field = popup.getClass().getDeclaredField("mPopup");
+                // 设置该成员为可访问的
+                field.setAccessible(true);
+                // 获取popup这个对象的该成员。
+                // 在调用这个方法之前，field仅仅表示 PopupMenu.mPopup这个成员；调用之后就表示具体的popup对象的mPopup成员了。
+                Object menuPopupHelper = field.get(popup);
+                // 这个比较绕:
+                // menuPopupHelper.getClass(): 获得menuPopupHelper对象的Java.lang.Class，在这里为 class MenuPopupHelper
+                // getName(): 以String形式返回此Class的名称，在这里为 "MenuPopupHelper"
+                // Class.forName(): 定义该类的一个具体对象
+                Class<?> classPopupHelper = Class.forName(menuPopupHelper.getClass().getName());
+                // 反射出classPopupHelper的方法"setForceShowIcon", boolean.class表示需要反射的方法的参数类型.
+                Method setForceIcons = classPopupHelper.getMethod("setForceShowIcon", boolean.class);
+                // 最后，invoke 对象menuPopupHelper的setForceShowIcon方法，参数为true.
+                // 其实这些代码所做的核心事件就是，调用： popup.mPopup.setForceShowIcon(true);
+                setForceIcons.invoke(menuPopupHelper, true);
+            } catch (Exception e)
+            {
+                e.printStackTrace();
+            }
+
+            popup.show();
+            return true;
+        }
+    }
+
+    private void exportmemo()
+    {
+        /*
+        File[] files = new File("/").listFiles();
+        for (File file : files)
+        {
+            String uri = file.getName();
+            String pa = file.getPath();
+            String x = uri + pa;
+        }
+        */
+        String content = memoText.getText().toString();
+        if (content == null || "".equals(content))
+        {
+            return;
+        }
+
+        // 用Intent分享文字内容
+        Intent intent = new Intent(Intent.ACTION_SEND);
+        intent.setType("text/plain");
+        // EXTRA_SUBJECT 貌似一般用在邮件中
+        intent.putExtra(Intent.EXTRA_SUBJECT, "MySecureMemo数据" + String.valueOf(currPage));
+        // 这里填充需要分享的文本内容
+        intent.putExtra(Intent.EXTRA_TEXT, content);
+        // 弹出候选的应用程序列表
+        startActivity(Intent.createChooser(intent, "导出数据" + String.valueOf(currPage) + "到..."));
+        // startActivity(intent);
+    }
+
+
+    private void importmemo()
+    {
+        // 这是临时申请权限.需参考Android6的新权限机制：
+        /*
+        * 对于6.0以下的权限及在安装的时候，根据权限声明产生一个权限列表，用户只有在同意之后才能完成app的安装，
+        * 造成了我们想要使用某个app，就要默默忍受其一些不必要的权限（比如是个app都要访问通讯录、短信等）。
+        * 而在6.0以后，我们可以直接安装，当app需要我们授予不恰当的权限的时候，我们可以予以拒绝（比如：单机的象棋对战，请求访问任何权限，我都是不同意的）。
+        * 当然你也可以在设置界面对每个app的权限进行查看，以及对单个权限进行授权或者解除授权。
+        * */
+        if(ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED)
+        {
+            // 请求读取文件的权限, 123无意义，仅用来传递给onRequestPermissionsResult，
+            // 在用户点击拒绝或授权后，会触发 onRequestPermissionsResult。
+            // 虽然可以在运行过程中申请权限，但测试发现仍然需要将该权限加在 AndroidManifest.xml 中
+            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.READ_EXTERNAL_STORAGE}, 123);
+            // 在这直接返回。如果用户确认了权限，则由onRequestPermissionsResult 函数再次调用 importmemo
+            return;
+        }
+
+        Intent selectedFile = new Intent(Intent.ACTION_GET_CONTENT);
+        selectedFile.setType("text/plain");
+        // selectedFile.addCategory(Intent.CATEGORY_OPENABLE);// 用来指示一个GET_CONTENT意图只希望ContentResolver.openInputStream能够打开URI
+        // 使用startActivityForResult，表示当用户从新的Activity完成选择后，能再回到当前Activity，是跳到onActivityResult处。
+        startActivityForResult(selectedFile, 456); // 此处的456一定要>=0，用来传递给onActivityResult(requestCode)
+    }
+
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data)
+    {
+        // 是否选择了确认
+        if (resultCode == Activity.RESULT_OK)
+        {
+            Uri uri = data.getData();//得到uri，后面就是将uri转化成file的过程。
+            String fileName = uri.getPath();
+
+            try
+            {
+                // FileInputStream fin = this.openFileInput(fileName);
+                FileInputStream fin = new FileInputStream(fileName);
+                int length = fin.available();
+                byte[] buffer = new byte[length];
+                fin.read(buffer);
+                fin.close();
+
+                if (memoText.getText().toString().isEmpty())
+                {
+                    memoText.setText(new String(buffer));
+                    setWaitDesStatus();
+                    AlertDialog.Builder AlertPlan = new AlertDialog.Builder(MainActivity.this);
+                    AlertPlan.setTitle("已导入，请输入密码，解密后完成保存。");
+                    AlertPlan.setPositiveButton(" 返回 ", null);
+                    AlertPlan.show();
+                }
+            } catch (Exception e)
+            {
+                // e.printStackTrace();
+                AlertDialog.Builder AlertPlan = new AlertDialog.Builder(MainActivity.this);
+                AlertPlan.setTitle("导入文件失败：" + e.toString());
+                AlertPlan.setPositiveButton(" 返回 ", null);
+                AlertPlan.show();
+            }
+        }
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults)
+    {
+        if(requestCode != 123)
+            return;
+
+        for(int res : grantResults)
+        {
+            if(getPackageManager().PERMISSION_GRANTED == res)
+            {
+                importmemo();
+            }
+            else
+            {
+                // Do nothing.
+            }
         }
     }
 
