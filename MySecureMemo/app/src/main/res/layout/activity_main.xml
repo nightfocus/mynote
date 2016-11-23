@@ -86,7 +86,7 @@
             android:layout_marginTop="5dp"
             android:layout_gravity="left|bottom"
             android:enabled="true"
-            android:ems="11"
+            android:ems="10"
             android:background="@drawable/editsharpstyle"
             android:height="10dp"
             />

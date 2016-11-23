@@ -29,13 +29,13 @@ public class AndroidDes3Util {
     public static String encode(String plainText, String secretKey) throws Exception
     {
         Key deskey = null;
-        DESedeKeySpec spec = new DESedeKeySpec(secretKey .getBytes());
+        DESedeKeySpec spec = new DESedeKeySpec(secretKey.getBytes());
         SecretKeyFactory keyfactory = SecretKeyFactory.getInstance("desede");
         deskey = keyfactory.generateSecret(spec);
 
-        Cipher cipher = Cipher.getInstance("desede/CBC/PKCS5Padding");
+        Cipher cipher = Cipher.getInstance("desede/CBC/PKCS5Padding"); // [cipher]/[mode]/[padding]
         IvParameterSpec ips = new IvParameterSpec( iv.getBytes());
-        cipher.init(Cipher.ENCRYPT_MODE , deskey, ips);
+        cipher.init(Cipher.ENCRYPT_MODE, deskey, ips);
         byte [] encryptData = cipher.doFinal(plainText.getBytes(encoding ));
         return Base64.encodeToString(encryptData,Base64. DEFAULT );
     }
@@ -53,9 +53,9 @@ public class AndroidDes3Util {
         Key deskey = null ;
         DESedeKeySpec spec = new DESedeKeySpec( secretKey.getBytes());
         SecretKeyFactory keyfactory = SecretKeyFactory.getInstance("desede");
-        deskey = keyfactory. generateSecret(spec);
-        Cipher cipher = Cipher.getInstance("desede/CBC/PKCS5Padding");
-        IvParameterSpec ips = new IvParameterSpec( iv.getBytes());
+        deskey = keyfactory.generateSecret(spec);
+        Cipher cipher = Cipher.getInstance("desede/CBC/PKCS5Padding");  // [cipher]/[mode]/[padding]
+        IvParameterSpec ips = new IvParameterSpec(iv.getBytes());
         cipher. init(Cipher.DECRYPT_MODE, deskey, ips);
 
         byte [] decryptData = cipher.doFinal(Base64.decode(encryptText, Base64. DEFAULT));
