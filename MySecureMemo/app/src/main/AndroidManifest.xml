@@ -2,26 +2,44 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="cn.kisskyu.mysecurememo" >
 
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.VIBRATE" />
 
     <application
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
         android:supportsRtl="true"
-        android:theme="@style/AppTheme" >
-        <activity android:name=".MainActivity"
-                  android:windowSoftInputMode="adjustPan">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
+        android:theme="@style/AppTheme">
 
+        <!--
+            standard (默认的开启模式): 会在当前任务栈栈顶再创建一个新的Activity的实例
+            singleTop (单一顶部模式): 如果当前的Activity已在栈顶,就不会创建一个新的Activity,而且复用以前的
+            singleTask (单一任务栈模式): 在整个任务栈中只允许存在一个Activity实例,
+                        如果要开启的Activity已经存在,直接复用存在的Activity,并把这个Activity上面的所有其他Activity清空
+            singleInstance(单一实例模式): 整个手机系统只有一个实例存在,并且是运行在自己的单独的任务栈里面,类似于Java的单例模式
+        -->
+        <activity
+            android:launchMode="singleTask"
+            android:name=".MainActivity"
+            android:label="@string/app_name"
+            android:windowSoftInputMode="adjustPan" >
+            <intent-filter>
+                <action android:name="ActualMainPage" />
+                <!-- 必须有默认的category -->
+                <category android:name="android.intent.category.DEFAULT"/>
+            </intent-filter>
+        </activity>
+        <activity android:name=".FirstCoverActivity"
+                  android:launchMode="standard"
+                  android:theme="@style/Theme.AppCompat.Light">
+            <intent-filter>
+                <!-- 这是主活动 APP入口页 -->
+                <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
     </application>
-
-    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
-    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
-    <uses-permission android:name="android.permission.VIBRATE"/>
-
 
 </manifest>

@@ -18,7 +18,9 @@ import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.text.Editable;
 import android.util.Base64;
+import android.view.GestureDetector;
 import android.view.MenuItem;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
@@ -42,6 +44,7 @@ public class MainActivity extends AppCompatActivity
     String passwdMd5; // 保存好的密码签名，用于验证密码是否正确
     int currPage;
     boolean has_READ_EXTERNAL_STORAGE = false;
+    private GestureDetector gestureDetector;
 
     // 定义一个匿名类，实现TextWatcher这个接口，并创建该类的对象myTextWatcher，
     // 这样在这个类中，可以直接使用 MainActivity 类的成员变量。
@@ -86,6 +89,15 @@ public class MainActivity extends AppCompatActivity
         }
     };
 
+    private View.OnTouchListener memoTextTouchListener = new View.OnTouchListener()
+    {
+        @Override
+        public boolean onTouch(View v, MotionEvent event)
+        {
+            return gestureDetector.onTouchEvent(event);
+        }
+    };
+
     static
     {
         System.loadLibrary("cencryptlib");
@@ -117,6 +129,7 @@ public class MainActivity extends AppCompatActivity
         page4 = (Button)findViewById(R.id.imageView4);
         currPage = 1; // 默认为第一页.
 
+
         initialData();
         // 注册文本框的事件
         // memoText.addTextChangedListener(myTextWatcher);
@@ -130,9 +143,74 @@ public class MainActivity extends AppCompatActivity
         page2.setOnLongClickListener(new OnLongClickPage());
         page3.setOnLongClickListener(new OnLongClickPage());
         page4.setOnLongClickListener(new OnLongClickPage());
+
+        // 捕获memoText控件中的手指事件. 仅在控件状态为 Enabled 时可触发。
+        // 没啥用，纯属测试.
+        memoText.setOnTouchListener(memoTextTouchListener);
+
+        gestureDetector = new GestureDetector(MainActivity.this, onGestureListener);
+
     }
 
-    // Activity关闭时会被触发，但调试时断点没有进入. 原因未知
+    /*
+        back键
+        Android的程序无需刻意的去退出,当你一按下手机的back键的时候，系统会默认调用程序栈中最上层Activity的Destroy()方法来，销毁当前Activity。
+        当此Activity又被其它Activity启动起来的时候,会重新调用OnCreate()方法进行创建,
+        当栈中所有Activity都弹出结束后,应用也就随之结束了.如果说程序中存在service之类的,则可以在恰当的位置监听处理下也就可以了.
+
+        home键
+        Android程序的隐藏,当你按下手机的Home键的时候,系统会默认调用程序栈中最上层Activity的stop()方法,
+        然后整个应用程序都会被隐藏起来,当你再次点击手机桌面上应用程序图标时,
+        系统会调用最上层Activity的OnResume()方法,此时不会重新打开程序,而是直接进入,会直接显示程序栈中最上层的Activity.
+    * */
+    @Override
+    public void onBackPressed()
+    {
+        // 显式的打开activity
+        // 当FirstCoverActivity.class 的 launchMode 是默认时，会重新创建这个活动;
+        // 但是，当 FirstCoverActivity.class 的 launchMode 是 singleTask时，则当前这个活动的 onDestroy 会被触发。
+        // 即便当前这个活动也是 signleTask.
+        startActivity(new Intent(this, FirstCoverActivity.class));
+    }
+
+    private GestureDetector.OnGestureListener onGestureListener = new GestureDetector.SimpleOnGestureListener()
+    {
+        // 用户按下触摸屏、快速移动后松开，由1个MotionEvent ACTION_DOWN, 多个ACTION_MOVE, 1个ACTION_UP触发
+        @Override
+        public boolean onFling(MotionEvent e1, MotionEvent e2, float velocityX,
+                               float velocityY)
+        {
+            float x = e2.getX() - e1.getX();
+            float y = e2.getY() - e1.getY();
+
+            if (x > 0)
+            {
+                // 右滑了
+            }
+            else if (x < 0)
+            {
+                // 左滑了
+            }
+            return true;
+        }
+
+        // 这里仅重载了onFling，还有：
+        // onDown 用户轻触触摸屏，由1个MotionEvent ACTION_DOWN触发
+        // onShowPress 用户轻触触摸屏，尚未松开或拖动，由一个1个MotionEvent ACTION_DOWN触发
+        // onSingleTapUp 用户（轻触触摸屏后）松开，由一个1个MotionEvent ACTION_UP触发
+        // onScroll 用户按下触摸屏，并拖动，由1个MotionEvent ACTION_DOWN, 多个ACTION_MOVE触发
+        // onLongPress 用户长按触摸屏，由多个MotionEvent ACTION_DOWN触发
+    };
+
+    // 在当前Activity中响应手指事件.
+    // 测试中如果在当前Activity的某个控件中touch，不会触发该方法. 必须在空白处touch.
+    public boolean onTouchEvent(MotionEvent event)
+    {
+        return gestureDetector.onTouchEvent(event);
+    }
+    // */
+
+    // Activity关闭时会被触发
     @Override
     protected void onDestroy()
     {
@@ -420,6 +498,8 @@ public class MainActivity extends AppCompatActivity
 
     private void exportmemo()
     {
+        // AsyncHttpClient asyncHttpClient = new AsyncHttpClient();
+
         /*
         File[] files = new File("/").listFiles();
         for (File file : files)
@@ -450,6 +530,7 @@ public class MainActivity extends AppCompatActivity
 
     private void importmemo()
     {
+
         // 这是临时申请权限.需参考Android6的新权限机制：
         /*
         * 对于6.0以下的权限及在安装的时候，根据权限声明产生一个权限列表，用户只有在同意之后才能完成app的安装，

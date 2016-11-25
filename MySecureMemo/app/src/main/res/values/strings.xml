@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">MySecureMemo</string>
+    <string name="new_tip">一个简单的私密记录本。\n\n1. 共有4个密码页，可分别设置密码；\n2. 长按页签图标可导入/导出密文；\n3. 每次保存时会使用当前密码框中的密钥。</string>
 </resources>
