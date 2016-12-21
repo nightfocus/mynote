@@ -12,6 +12,7 @@ import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.text.method.ScrollingMovementMethod;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.View;
@@ -48,6 +49,21 @@ public class MainActivity extends AppCompatActivity
     int vWidth = 720;
     int vHeight = 540;
 
+
+    // 这个库目前需手动调用ndk-build来生成，目标会在：app\src\main\libs\armeabi\
+    // D:\github.private\mynote\MyMediaTest\app\src\main>d:\android-ndk-r10e\ndk-build
+    static
+    {
+        System.loadLibrary("h264encoder");
+    }
+
+    /**
+     * 进入目录： \MyMediaTest\app\src\main
+     * 视情况修改目录名：
+     * javah -d jni -classpath D:\android-sdk\platforms\android-23\android.jar;D:\android-sdk\extras\android\support\v7\appcompat\libs\android-support-v7-appcompat.jar;D:\android-sdk\extras\android\support\v4\android-support-v4.jar;D:\github.private\mynote\MyMediaTest\app\build\intermediates\classes\debug test.kisskyu.mymediatest.MainActivity
+     */
+    public synchronized static native String cH264encoderInit();
+
     @Override
     protected void onCreate(Bundle savedInstanceState)
     {
@@ -57,6 +73,13 @@ public class MainActivity extends AppCompatActivity
         stButton = (Button) this.findViewById(R.id.StartButton);
         text1 = (TextView) this.findViewById(R.id.textView);
         mSurfaceView = (SurfaceView) this.findViewById(R.id.surfaceViewEx);
+
+        // 让text可以滚动.
+        text1.setMovementMethod(ScrollingMovementMethod.getInstance());
+
+
+        String abc = cH264encoderInit();
+        text1.setText(abc);
     }
 
     public void onStartVideoTest(View v)
@@ -81,7 +104,7 @@ public class MainActivity extends AppCompatActivity
             handleYUVThread.setPriority(Thread.MAX_PRIORITY);
             handleYUVThread.start();
 
-            mSurfaceView.getHolder().setFixedSize(720, 1080);
+            mSurfaceView.getHolder().setFixedSize(360, 480); // 设备画布的大小.
             mSurfaceView.getHolder().addCallback(new SurfaceCallBack());
             try
             {
