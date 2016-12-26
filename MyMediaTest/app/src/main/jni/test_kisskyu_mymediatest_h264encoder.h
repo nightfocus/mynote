@@ -65,10 +65,26 @@ extern "C" {
 #define test_kisskyu_mymediatest_MainActivity_MSG_RESUME_PENDING 2L
 /*
  * Class:     test_kisskyu_mymediatest_MainActivity
- * Method:    h264encoder_init
- * Signature: ()Ljava/lang/String;
+ * Method:    cH264encoderInit
+ * Signature: ()I
  */
-JNIEXPORT jstring JNICALL Java_test_kisskyu_mymediatest_MainActivity_cH264encoderInit
+JNIEXPORT jint JNICALL Java_test_kisskyu_mymediatest_MainActivity_cH264encoderInit
+  (JNIEnv *, jclass);
+
+/*
+ * Class:     test_kisskyu_mymediatest_MainActivity
+ * Method:    cH264encoderWork
+ * Signature: ([BLjava/lang/Integer;)[B
+ */
+JNIEXPORT jbyteArray JNICALL Java_test_kisskyu_mymediatest_MainActivity_cH264encoderWork
+  (JNIEnv *, jclass, jbyteArray, jint, jobject);
+
+/*
+ * Class:     test_kisskyu_mymediatest_MainActivity
+ * Method:    cH264encoderDestroy
+ * Signature: ()V
+ */
+JNIEXPORT void JNICALL Java_test_kisskyu_mymediatest_MainActivity_cH264encoderDestroy
   (JNIEnv *, jclass);
 
 #ifdef __cplusplus

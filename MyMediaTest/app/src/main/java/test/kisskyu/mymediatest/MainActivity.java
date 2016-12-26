@@ -36,6 +36,7 @@ import java.util.concurrent.locks.ReentrantLock;
 public class MainActivity extends AppCompatActivity
 {
 
+    private String outputFile = "/sdcard/mymediatestdata.h264";
     public SurfaceView mSurfaceView = null;
     Camera mCamera = null;
     Button stButton;
@@ -61,8 +62,12 @@ public class MainActivity extends AppCompatActivity
      * 进入目录： \MyMediaTest\app\src\main
      * 视情况修改目录名：
      * javah -d jni -classpath D:\android-sdk\platforms\android-23\android.jar;D:\android-sdk\extras\android\support\v7\appcompat\libs\android-support-v7-appcompat.jar;D:\android-sdk\extras\android\support\v4\android-support-v4.jar;D:\github.private\mynote\MyMediaTest\app\build\intermediates\classes\debug test.kisskyu.mymediatest.MainActivity
+     * 编译方式：
+     * 直接执行ndk-build，会根据Android.mk生成相应的so在 armeabi/ 目录下libs/
      */
-    public synchronized static native String cH264encoderInit();
+    public synchronized static native int cH264encoderInit();
+    public static native byte[] cH264encoderWork(byte[] data, int dataLen, Integer status);
+    public synchronized static native void cH264encoderDestroy();
 
     @Override
     protected void onCreate(Bundle savedInstanceState)
@@ -76,17 +81,14 @@ public class MainActivity extends AppCompatActivity
 
         // 让text可以滚动.
         text1.setMovementMethod(ScrollingMovementMethod.getInstance());
-
-
-        String abc = cH264encoderInit();
-        text1.setText(abc);
     }
 
+    // 开始按钮事件
     public void onStartVideoTest(View v)
     {
         try
         {
-            // 申请camera权限.
+            // 申请camera权限.  回调函数见：onRequestPermissionsResult
             if(ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED)
             {
                 ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.CAMERA}, 123);
@@ -104,8 +106,10 @@ public class MainActivity extends AppCompatActivity
             handleYUVThread.setPriority(Thread.MAX_PRIORITY);
             handleYUVThread.start();
 
+            text1.setText("Save: " + outputFile);
             mSurfaceView.getHolder().setFixedSize(360, 480); // 设备画布的大小.
             mSurfaceView.getHolder().addCallback(new SurfaceCallBack());
+            // 以下这段代码也可以放在SurfaceCallBack中，待回调时执行。
             try
             {
                 if(mCamera == null)
@@ -180,10 +184,14 @@ public class MainActivity extends AppCompatActivity
                     // 如果是横屏拍摄，则不需要做 90度的转换.
                     byte[] tmpyuv420 = rotateYUV420Degree90(data, vWidth, vHeight);
                      _YUVQueue.offer(nv21ToI420(tmpyuv420, vWidth, vHeight));
+
+                    Date d = new Date(System.currentTimeMillis());
+                    System.out.print("NewFrame: " + d.toString() + ": ");
+                    System.out.println(tmpyuv420.length);
                 }
                 else
                 {
-                    System.out.println("Drop a frame.");
+                    System.out.println("Queue is too much, drop this frame.");
                 }
                 _queueCond.signal();
                 _queueLock.unlock();
@@ -197,18 +205,18 @@ public class MainActivity extends AppCompatActivity
     {
         if(mCamera != null)
         {
-            mCamera.setPreviewCallback(null);
-            mCamera.stopPreview();
+            mCamera.setPreviewCallback(null); // 设置回调为空
+            mCamera.stopPreview(); // 停止回调函数
             mCamera.release();
+            mCamera = null;
 
             // 让线程 handleYUVRunnable 退出.
             _queueLock.lock();
+            _YUVQueue.clear();  // 清除YUV的缓存队列.
             _queueCond.signal();
             _queueLock.unlock();
             bStartFlag = false;
             // _queueCond.signal();
-
-            mCamera = null;
         }
     }
 
@@ -220,44 +228,54 @@ public class MainActivity extends AppCompatActivity
         public void run()
         {
             FileOutputStream fileOut = null;
+            int rs = 0;
+            if((rs = cH264encoderInit()) != 0)
+            {
+                System.out.println("Error on cH264encoderInit(): " + String.valueOf(rs));
+                return;
+            }
 
+            byte[] yuvData = null;
             while (bStartFlag)
             {
                 try
                 {
                     _queueLock.lock();
-                    _queueCond.await();
-                    while (bStartFlag)
+                    if(yuvData == null)
+                        _queueCond.await();
+                    yuvData = _YUVQueue.poll();
+                    _queueLock.unlock();
+                    if (yuvData == null)
                     {
-                        byte[] yuvData = _YUVQueue.poll();
-                        if (yuvData == null)
-                        {
-                            break;
-                        }
-                        Date d = new Date(System.currentTimeMillis());
-                        System.out.print(d.toString() + ": ");
-                        System.out.println(yuvData.length);
-                        try
-                        {
-                            if (fileOut == null)
-                            {
-                                fileOut = new FileOutputStream("/sdcard/mymediatestdata.yuv", false);
-                            }
-                            fileOut.write(yuvData);
-                        }
-                        catch (IOException e)
-                        {
-                            e.printStackTrace();
-                        }
+                        continue;
                     }
+
+                    // Date d = new Date(System.currentTimeMillis());
+                    // System.out.print(d.toString() + ": ");
+                    // System.out.println(yuvData.length);
+                    try
+                    {
+                        Integer status = 0;
+                        byte[] h264FrameData = cH264encoderWork(yuvData, yuvData.length, status);
+                        System.out.println("status:" + String.valueOf(status) + ", len: " + (h264FrameData==null ? "0" : h264FrameData.length) );
+                        if (fileOut == null)
+                        {
+                            fileOut = new FileOutputStream(outputFile, false);
+                        }
+                        if(status == 1)
+                            fileOut.write(h264FrameData);
+                        else
+                            System.out.println("Error on cH264encoderWork(): " + String.valueOf(status));
+                    }
+                    catch (IOException e)
+                    {
+                        e.printStackTrace();
+                    }
+
                 }
                 catch (Exception e)
                 {
                     e.printStackTrace();
-                }
-                finally
-                {
-                    _queueLock.unlock();
                 }
             }
 
@@ -270,6 +288,7 @@ public class MainActivity extends AppCompatActivity
             {
             }
 
+            cH264encoderDestroy();
             return;
         }
 
@@ -379,6 +398,7 @@ public class MainActivity extends AppCompatActivity
         }
     }
 
+    // Android6.0+ 授权回调函数
     @Override
     public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults)
     {
