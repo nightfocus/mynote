@@ -90,6 +90,8 @@ JNIEXPORT int JNICALL Java_test_kisskyu_mymediatest_MainActivity_cH264encoderIni
     // uint8_t* gPicture_buf = (uint8_t *)av_malloc(picture_size);
 
     // 在pFrame中填充图像信息.
+    // 如果分辨率不变，可以只调用一次该函数，编码每1帧时再直接对gpFrame->data赋值即可.
+    //
     avpicture_fill((AVPicture *)gpFrame, NULL, gpCodecCtx->pix_fmt, gpCodecCtx->width, gpCodecCtx->height);
 
     av_init_packet(&gPkt);
@@ -137,6 +139,7 @@ JNIEXPORT jbyteArray JNICALL Java_test_kisskyu_mymediatest_MainActivity_cH264enc
     unsigned char cData[dataLen];
     (*env)->GetByteArrayRegion(env, data, 0, dataLen, cData); // 这会有一次内存拷贝?!
     int y_size = gpCodecCtx->width * gpCodecCtx->height;
+    // 这三行也可以使用avpicture_fill函数替代.
     gpFrame->data[0] = cData;                  // Y
     gpFrame->data[1] = cData + y_size;         // U
     gpFrame->data[2] = cData + y_size * 5 / 4; // V

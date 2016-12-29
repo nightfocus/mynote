@@ -64,6 +64,7 @@ public class MainActivity extends AppCompatActivity
      * javah -d jni -classpath D:\android-sdk\platforms\android-23\android.jar;D:\android-sdk\extras\android\support\v7\appcompat\libs\android-support-v7-appcompat.jar;D:\android-sdk\extras\android\support\v4\android-support-v4.jar;D:\github.private\mynote\MyMediaTest\app\build\intermediates\classes\debug test.kisskyu.mymediatest.MainActivity
      * 编译方式：
      * 直接执行ndk-build，会根据Android.mk生成相应的so在 armeabi/ 目录下libs/
+     * 也可以在build.gradle中增加task，让ndk-build随该工程自动编译或清除.
      */
     public synchronized static native int cH264encoderInit();
     public static native byte[] cH264encoderWork(byte[] data, int dataLen, Integer status);
