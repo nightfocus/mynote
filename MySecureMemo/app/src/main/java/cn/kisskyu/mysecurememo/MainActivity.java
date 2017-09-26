@@ -11,9 +11,11 @@ import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.net.Uri;
+import android.os.Environment;
 import android.os.Vibrator;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
+import android.support.v4.content.FileProvider;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.text.Editable;
@@ -28,7 +30,10 @@ import android.widget.EditText;
 import android.text.TextWatcher;
 import android.widget.PopupMenu;
 import android.widget.TextView;
+
+import java.io.File;
 import java.io.FileInputStream;
+import java.io.InputStream;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.security.MessageDigest;
@@ -550,6 +555,7 @@ public class MainActivity extends AppCompatActivity
 
         Intent selectedFile = new Intent(Intent.ACTION_GET_CONTENT);
         selectedFile.setType("text/plain");
+        // selectedFile.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
         // selectedFile.addCategory(Intent.CATEGORY_OPENABLE);// 用来指示一个GET_CONTENT意图只希望ContentResolver.openInputStream能够打开URI
         // 使用startActivityForResult，表示当用户从新的Activity完成选择后，能再回到当前Activity，是跳到onActivityResult处。
         startActivityForResult(selectedFile, 456); // 此处的456一定要>=0，用来传递给onActivityResult(requestCode)
@@ -562,17 +568,30 @@ public class MainActivity extends AppCompatActivity
         // 是否选择了确认
         if (resultCode == Activity.RESULT_OK)
         {
-            Uri uri = data.getData();//得到uri，后面就是将uri转化成file的过程。
-            String fileName = uri.getPath();
+            Uri uri = data.getData(); //得到uri，后面就是将uri转化成流的过程。
+            InputStream is = null;
+
+            // Uri uri = data.getData();//得到uri，后面就是将uri转化成file的过程。
+            // String fileName = uri.getPath();
+            // Uri contentUri = FileProvider.getUriForFile(this, "cn.kisskyu.mysecurememo.fileprovider", new File(fileName));
+            // Uri x = contentUri;
+            // File paths = Environment.getExternalStorageDirectory();
 
             try
             {
+                // 将 content:// 这样的文件名，转换成uri
+                is = getContentResolver().openInputStream(uri);
+
                 // FileInputStream fin = this.openFileInput(fileName);
-                FileInputStream fin = new FileInputStream(fileName);
-                int length = fin.available();
+
+                // For android7.0, fileName路径不能被获取到.
+                // FileInputStream fin = new FileInputStream("/storage/emulated/0/BaiduNetdisk/33.txt");
+
+                // FileInputStream fin = new FileInputStream(fileName);
+                int length = is.available();
                 byte[] buffer = new byte[length];
-                fin.read(buffer);
-                fin.close();
+                is.read(buffer);
+                is.close();
 
                 if (memoText.getText().toString().isEmpty())
                 {
@@ -580,6 +599,13 @@ public class MainActivity extends AppCompatActivity
                     setWaitDesStatus();
                     AlertDialog.Builder AlertPlan = new AlertDialog.Builder(MainActivity.this);
                     AlertPlan.setTitle("已导入，请输入密码，解密后完成保存。");
+                    AlertPlan.setPositiveButton(" 返回 ", null);
+                    AlertPlan.show();
+                }
+                else
+                {
+                    AlertDialog.Builder AlertPlan = new AlertDialog.Builder(MainActivity.this);
+                    AlertPlan.setTitle("请先清除现有内容。");
                     AlertPlan.setPositiveButton(" 返回 ", null);
                     AlertPlan.show();
                 }
