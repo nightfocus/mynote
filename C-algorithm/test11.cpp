@@ -4,7 +4,6 @@
     g++ -o test11 test11.cpp -std=c++11 -pthread -Wall
     
     c++ 11 feature test.
-    gcc version 4.8.4 pass through.
 */
 
 #include <iostream>
@@ -202,6 +201,11 @@ int main()
     cout << c.count() << " ms = " << d.count() << " sec." << endl;  
     
     cout << "--------------------- 9 -----------------------" << endl << endl;
+    // 计算耗时
+    std::chrono::steady_clock::time_point tb1 = std::chrono::steady_clock::now(); // 开始时间点  tb1
+    std::this_thread::sleep_for(std::chrono::milliseconds(50));
+
+    /*
     // 9. atomic使用 及性能对比
     // case 1: 使用10线程不加锁对int进行自增. 速度最快,但结果不对。
     {
@@ -244,6 +248,12 @@ int main()
         auto duration = duration_cast<chrono::milliseconds>(end1 - start1);
         cout << "cnt3: " << cnt << ", duration: " << double(duration.count()) << " ms." << endl;
     }
+    //*/
+    // 当前时间点 - tb1， 得到一个类型为 chrono::steady_clock::duration 的对象
+    auto tzz1 = chrono::steady_clock::now() - tb1;
+    // 将tzz1精度化成一个毫秒的对象, 类型是 chrono::milliseconds
+    auto tDurMilliSec = chrono::duration_cast<chrono::milliseconds>(tzz2);
+    cout << "consumes "<< tDurMilliSec.count() << " millisec." << endl;
 
     cout << "--------------------- 10 -----------------------" << endl << endl;
     // 10. 智能指针. shared_ptr
@@ -253,6 +263,10 @@ int main()
         pb2 = pb;
         cout << "out of pb lifetime, but don't invoke B::~B()" << endl;
     }
+    // pb2.reset();
+    if(pb2 == nullptr)
+        cout << "pb2 is nullptr." << endl;
+    
     // 将shared_ptr作为线程参数传递
     {
         shared_ptr<A> pa1 = make_shared<A>();
