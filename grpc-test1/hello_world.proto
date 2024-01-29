@@ -1,0 +1,83 @@
+//声明proto的版本 只有 proto3 才支持 gRPC
+syntax = "proto3";
+// 定义生成的 go 文件所属包的完整包名，所谓完整，是指相对于该项目的完整的包路径，应以项目的 Module Name 为前缀。
+option go_package = "project1/abcd/helloworld";
+// 指定当前proto文件属于helloworld包
+package helloworld;
+
+// 以下文件，需要从对应的gopath文件夹或网上手动复制过来。
+// https://github.com/googleapis/googleapis/blob/master/google/api/annotations.proto
+import "google/api/annotations.proto";
+import "google/protobuf/struct.proto";
+// https://github.com/grpc-ecosystem/grpc-gateway/blob/master/protoc-gen-openapiv2/options/annotations.proto
+import "protoc-gen-openapiv2/options/annotations.proto";
+
+// 定义一个名叫 greeting 的服务
+service Greeteraaa {
+  // 该服务包含一个 SayHello 方法 HelloRequest、HelloReply分别为该方法的输入与输出
+  rpc SayHello (HelloRequest) returns (HelloReply) {
+      option (google.api.http) = {
+            post: "/v1/greeter/sayhello"
+            body: "*"
+      };
+  }
+
+  rpc SayHello2 (HelloRequest) returns (HelloReply) {
+    option (google.api.http) = {
+      post: "/v1/greeter/sayhello2"
+      body: "*"
+    };
+  }
+}
+
+option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_swagger) = {
+  info: {
+    title: "go-service-helloworld"
+    version : "1.0.0"
+    description: "gRPC服务用的\n"
+         "* 描述1行\n"
+         "* 描述2行\n"
+  };
+  schemes: HTTP
+  consumes: "application/json"
+  produces: "application/json"
+};
+
+// HelloRequest 入参
+//
+// | Syntax | Description |
+// | ----------- | ----------- |
+// | Header | Title |
+// | Paragraph | Text |
+message HelloRequest {
+  // 用户上传的name参数
+  //
+  // 这个name可以是a,b,c
+  string name = 1;
+  int32 z = 2;
+  optional google.protobuf.ListValue arrays = 4;
+}
+
+// HelloReply
+//
+// - [x] Write the press release
+// - [ ] Update the website
+// - [ ] Contact the media
+message HelloReply {
+  // 这是返回描述
+  //
+  // 这是返回的应答参数dddddrfwefe
+  string message = 1;
+  string voPeeeMdd = 2;
+  // 这是嵌套的struct，它无法在swagger显示。
+  HelloReplyCore core = 3;
+  optional google.protobuf.ListValue arrays = 4;
+}
+
+// HelloReplyCore
+// 描述它
+message HelloReplyCore {
+  /* 这是core内部的a
+  */
+  string a = 1;
+}

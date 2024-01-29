@@ -1,0 +1,131 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "go-service-helloworld",
+    "description": "gRPC服务用的\n* 描述1行\n* 描述2行\n",
+    "version": "1.0.0"
+  },
+  "tags": [
+    {
+      "name": "Greeter"
+    }
+  ],
+  "schemes": [
+    "http"
+  ],
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "paths": {
+    "/v1/greeter/sayhello": {
+      "post": {
+        "summary": "该服务包含一个 SayHello 方法 HelloRequest、HelloReply分别为该方法的输入与输出",
+        "operationId": "Greeter_SayHello",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/helloworldHelloReply"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/helloworldHelloRequest"
+            }
+          }
+        ],
+        "tags": [
+          "Greeter"
+        ]
+      }
+    }
+  },
+  "definitions": {
+    "helloworldHelloReply": {
+      "type": "object",
+      "properties": {
+        "message": {
+          "type": "string",
+          "description": "这是返回的应答参数dddddrfwefe",
+          "title": "这是返回描述"
+        },
+        "voPeeeMdd": {
+          "type": "string"
+        },
+        "core": {
+          "$ref": "#/definitions/helloworldHelloReplyCore",
+          "title": "这是嵌套的struct，它无法在swagger显示。"
+        }
+      },
+      "description": "- [x] Write the press release\n- [ ] Update the website\n- [ ] Contact the media",
+      "title": "HelloReply"
+    },
+    "helloworldHelloReplyCore": {
+      "type": "object",
+      "properties": {
+        "a": {
+          "type": "string",
+          "title": "这是core内部的a"
+        }
+      },
+      "title": "HelloReplyCore\n描述它"
+    },
+    "helloworldHelloRequest": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "这个name可以是a,b,c",
+          "title": "用户上传的name参数"
+        },
+        "z": {
+          "type": "integer",
+          "format": "int32"
+        }
+      },
+      "description": "| Syntax | Description |\n| ----------- | ----------- |\n| Header | Title |\n| Paragraph | Text |",
+      "title": "HelloRequest 入参"
+    },
+    "protobufAny": {
+      "type": "object",
+      "properties": {
+        "@type": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": {}
+    },
+    "rpcStatus": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "details": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/protobufAny"
+          }
+        }
+      }
+    }
+  }
+}

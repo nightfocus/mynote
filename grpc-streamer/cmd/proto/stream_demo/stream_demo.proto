@@ -1,0 +1,20 @@
+syntax = "proto3";
+
+// 定义生成的 go 文件所属包的完整包名，所谓完整，是指相对于该项目的完整的包路径，应以项目的 Module Name 为前缀。
+option go_package = "grpc-streamer/stream_demo";
+
+package stream_demo;
+
+service StreamService {
+  rpc StreamDemo(stream Request) returns (stream Response) {}
+}
+
+message Request {
+  string message = 1;
+}
+
+message Response {
+  string message = 1;
+  int64 session = 2;
+  int32 cnt = 3;
+}
